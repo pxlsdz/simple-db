@@ -6,11 +6,11 @@ import simpledb.common.DbException;
 import simpledb.common.DeadlockException;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import util.LRUCache;
 
 import java.io.*;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 public class BufferPool {
-    Map<PageId, Page> cache;
+    private LRUCache cache;
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
@@ -43,7 +43,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
-        cache = new ConcurrentHashMap<>(numPages);
+        cache = new LRUCache(numPages);
 
     }
     
@@ -149,6 +149,14 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        HeapFile heapFile = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> pages = heapFile.insertTuple(tid, t);
+        for(Page page: pages){
+            HeapPage heapPage = (HeapPage) page;
+            heapPage.markDirty(true, tid);
+            cache.put(heapPage.getId(), heapPage);
+        }
+
     }
 
     /**
@@ -168,6 +176,16 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        RecordId recordId = t.getRecordId();
+        HeapFile heapFile = (HeapFile)Database.getCatalog().getDatabaseFile(recordId.getPageId().getTableId());
+        List<Page> pages = heapFile.deleteTuple(tid, t);
+
+        HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_ONLY);
+        for(Page page: pages){
+            HeapPage heapPage = (HeapPage) page;
+            heapPage.markDirty(true, tid);
+            cache.put(heapPage.getId(), heapPage);
+        }
     }
 
     /**

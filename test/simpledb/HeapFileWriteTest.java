@@ -53,8 +53,7 @@ public class HeapFileWriteTest extends TestUtil.CreateHeapFile {
     @Test
     public void testAlternateEmptyAndFullPagesThenIterate() throws Exception {
         // Create HeapFile/Table
-        HeapFile smallFile = SystemTestUtil.createRandomHeapFile(2, 3, null,
-                null);
+        HeapFile smallFile = SystemTestUtil.createRandomHeapFile(2, 3, null, null);
         // Grab table id
         int tableId = smallFile.getId();
         int tdSize = 8;

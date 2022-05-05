@@ -49,8 +49,14 @@ public class HeapFileIterator implements DbFileIterator {
         if(curPage >= numPages) {
             return false;
         }
-        curHeapPage = (HeapPage)Database.getBufferPool().getPage(tid, new HeapPageId(heapFileId, curPage), Permissions.READ_ONLY);
-        it = curHeapPage.iterator();
+        while(curPage < numPages){
+            curHeapPage = (HeapPage)Database.getBufferPool().getPage(tid, new HeapPageId(heapFileId, curPage), Permissions.READ_ONLY);
+            it = curHeapPage.iterator();
+            if(it.hasNext()) {
+                break;
+            }
+            curPage++;
+        }
         return curPage < numPages;
     }
 
@@ -59,7 +65,10 @@ public class HeapFileIterator implements DbFileIterator {
         if(!isOpen || it == null) {
             throw new NoSuchElementException();
         }
-        return it.next();
+        if(hasNext()){
+            return it.next();
+        }
+        throw new NoSuchElementException();
     }
 
     @Override
